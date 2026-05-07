@@ -1,0 +1,25 @@
+{
+  "name": "Tablero de Impresión",
+  "short_name": "Tablero IE",
+  "description": "Control de producción flexografía - Integral de Empaques SAS",
+  "start_url": "/Tablero-3/flexo_dashboard.html",
+  "scope": "/Tablero-3/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0a0d13",
+  "theme_color": "#00e5ff",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

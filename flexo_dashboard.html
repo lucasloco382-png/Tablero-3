@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tablero de Impresión — Integral de Empaques</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00e5ff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tablero IE">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Oswald:wght@400;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0a0d13;--panel:#111520;--panel2:#161c2b;--border:#1e2d4a;
+    --cyan:#00e5ff;--mag:#ff2d78;--green:#39ff14;--yellow:#ffe600;
+    --text:#cde4ff;--dim:#4e6a8a;
+    --font-mono:'Share Tech Mono',monospace;
+    --font-head:'Oswald',sans-serif;
+    --font-body:'Rajdhani',sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh;overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px);pointer-events:none;z-index:9999}
+
+  /* INSTALL BANNER */
+  #installBanner{display:none;background:linear-gradient(90deg,rgba(0,229,255,.15),rgba(255,230,0,.1));border-bottom:1px solid var(--cyan);padding:8px 20px;align-items:center;justify-content:space-between;gap:12px}
+  #installBanner.show{display:flex}
+  .i-text{font-size:13px;letter-spacing:1px}.i-text span{color:var(--cyan);font-weight:700}
+  .i-actions{display:flex;gap:8px}
+  .btn-inst{background:var(--cyan);color:#000;border:none;padding:6px 16px;font-family:var(--font-head);font-size:12px;letter-spacing:2px;cursor:pointer;border-radius:2px;font-weight:700}
+  .btn-inst-x{background:transparent;border:1px solid var(--dim);color:var(--dim);padding:6px 12px;font-family:var(--font-body);font-size:11px;cursor:pointer;border-radius:2px}
+
+  /* HEADER */
+  .hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;background:linear-gradient(90deg,#050810,#0e1624,#050810);border-bottom:2px solid var(--cyan);position:sticky;top:0;z-index:100;box-shadow:0 0 30px rgba(0,229,255,.18);flex-wrap:wrap;gap:10px}
+  .hdr-l{display:flex;align-items:center;gap:16px}
+  .logo{background:var(--cyan);color:#000;font-family:var(--font-head);font-weight:700;font-size:11px;padding:5px 10px;letter-spacing:2px;clip-path:polygon(0 0,100% 0,95% 100%,5% 100%)}
+  .htitle{font-family:var(--font-head);font-size:18px;font-weight:700;color:var(--cyan);text-shadow:0 0 12px rgba(0,229,255,.5);letter-spacing:3px;text-transform:uppercase}
+  .hsub{font-size:10px;color:var(--dim);letter-spacing:2px;margin-top:2px;text-transform:uppercase}
+  .hdr-r{display:flex;align-items:center;gap:20px}
+  .clock{font-family:var(--font-mono);font-size:20px;color:var(--green);text-shadow:0 0 10px rgba(57,255,20,.5);letter-spacing:2px}
+  .dline{font-size:10px;color:var(--dim);text-align:right;letter-spacing:1px;margin-top:2px}
+  .stats{display:flex;gap:14px}
+  .stat{text-align:center}
+  .stat-v{font-family:var(--font-mono);font-size:17px;font-weight:bold}
+  .stat-l{font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase}
+
+  /* LEGEND */
+  .leg{display:flex;gap:18px;padding:7px 24px;background:#0c1019;border-bottom:1px solid var(--border);align-items:center;flex-wrap:wrap}
+  .leg-i{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--dim);letter-spacing:1px;text-transform:uppercase}
+  .leg-d{width:10px;height:10px;border-radius:50%}
+
+  /* GRID */
+  .grid{padding:18px 18px 40px;display:grid;grid-template-columns:repeat(auto-fill,minmax(500px,1fr));gap:16px}
+
+  /* CARD */
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:4px;overflow:hidden;transition:transform .15s,box-shadow .2s;position:relative}
+  .card.bv{border-top:3px solid var(--cyan)}
+  .card.ps{border-top:3px solid var(--mag)}
+  .card:hover{transform:translateY(-2px);box-shadow:0 6px 30px rgba(0,0,0,.5)}
+
+  .c-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px}
+  .card.bv .c-hdr{background:rgba(0,229,255,.07)}
+  .card.ps .c-hdr{background:rgba(255,45,120,.07)}
+  .mid-blk{display:flex;align-items:center;gap:10px}
+  .mnum{font-family:var(--font-head);font-size:26px;font-weight:700;line-height:1}
+  .card.bv .mnum{color:var(--cyan);text-shadow:0 0 10px rgba(0,229,255,.4)}
+  .card.ps .mnum{color:var(--mag);text-shadow:0 0 10px rgba(255,45,120,.4)}
+  .mname{font-family:var(--font-head);font-size:13px;font-weight:600;letter-spacing:3px;text-transform:uppercase}
+  .card.bv .mname{color:var(--cyan)}.card.ps .mname{color:var(--mag)}
+  .mtype{font-size:8px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+  .c-hdr-r{display:flex;align-items:center;gap:8px}
+
+  .sup-btn{background:rgba(255,230,0,.1);border:1px solid var(--yellow);color:var(--yellow);font-size:10px;padding:4px 9px;cursor:pointer;border-radius:2px;letter-spacing:1px;font-family:var(--font-body);font-weight:600;transition:all .12s;text-transform:uppercase}
+  .sup-btn:hover{background:rgba(255,230,0,.2);box-shadow:0 0 10px rgba(255,230,0,.3)}
+  .sup-badge{background:rgba(255,230,0,.18);color:var(--yellow);border:1px solid var(--yellow);font-size:9px;padding:2px 7px;border-radius:2px;display:none;letter-spacing:1px;text-transform:uppercase}
+
+  .st-sel{background:transparent;border:1px solid var(--border);color:var(--text);font-family:var(--font-mono);font-size:10px;padding:3px 6px;border-radius:2px;cursor:pointer}
+  .st-sel option{background:var(--panel)}
+
+  /* BODY */
+  .c-body{padding:12px 14px;position:relative}
+  .lock-ov{display:none;position:absolute;inset:0;background:rgba(5,8,16,.65);z-index:10;align-items:center;justify-content:center;font-family:var(--font-head);font-size:11px;color:var(--yellow);letter-spacing:2px;text-transform:uppercase;flex-direction:column;gap:8px}
+  .lock-ov.on{display:flex}
+  .lock-ico{font-size:26px}
+
+  .fg{display:grid;gap:6px 10px;margin-bottom:8px}
+  .fb{background:var(--panel2);border:1px solid var(--border);border-radius:3px;padding:6px 9px}
+  .fl{font-size:8px;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px}
+  .fi{background:transparent;border:none;outline:none;color:var(--text);font-family:var(--font-mono);font-size:12px;width:100%;caret-color:var(--cyan)}
+  .fi::placeholder{color:var(--dim)}.fi:focus{color:var(--cyan)}
+  .fsel{background:transparent;border:none;outline:none;color:var(--text);font-family:var(--font-mono);font-size:12px;width:100%;cursor:pointer;-webkit-appearance:none}
+  .fsel option{background:var(--panel)}
+  .fta{background:transparent;border:none;outline:none;color:var(--text);font-family:var(--font-body);font-size:12px;width:100%;resize:none;line-height:1.4}
+  .fta::placeholder{color:var(--dim)}.fta:focus{color:var(--cyan)}
+
+  .prog-w{height:3px;background:var(--border);border-radius:2px;margin:2px 0 8px;overflow:hidden}
+  .prog-f{height:100%;border-radius:2px;transition:width .4s}
+  .card.bv .prog-f{background:var(--cyan)}.card.ps .prog-f{background:var(--mag)}
+
+  /* FOOTER */
+  .c-foot{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;border-top:1px solid var(--border);background:rgba(0,0,0,.2);flex-wrap:wrap;gap:6px}
+  .f-time{font-family:var(--font-mono);font-size:10px;color:var(--dim)}
+  .f-acts{display:flex;gap:6px}
+  .bsm{font-family:var(--font-body);font-size:10px;padding:4px 10px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;border-radius:2px;letter-spacing:1px;text-transform:uppercase;transition:all .12s}
+  .bsm.sv{border-color:var(--green);color:var(--green)}.bsm.sv:hover{background:rgba(57,255,20,.1)}
+  .bsm.cl{border-color:var(--mag);color:var(--mag)}.bsm.cl:hover{background:rgba(255,45,120,.1)}
+
+  /* PIN MODAL */
+  .m-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;justify-content:center;align-items:center}
+  .m-ov.on{display:flex}
+  .modal{background:var(--panel);border:2px solid var(--yellow);border-radius:4px;padding:30px;width:320px;box-shadow:0 0 40px rgba(255,230,0,.25)}
+  .m-title{font-family:var(--font-head);font-size:17px;color:var(--yellow);letter-spacing:3px;text-transform:uppercase;margin-bottom:5px;text-align:center}
+  .m-sub{font-size:11px;color:var(--dim);text-align:center;margin-bottom:20px;letter-spacing:1px}
+  .m-mach{font-family:var(--font-mono);font-size:12px;color:var(--cyan);text-align:center;margin-bottom:16px;letter-spacing:2px}
+  .pin-disp{display:flex;gap:10px;justify-content:center;margin-bottom:18px}
+  .pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--yellow);background:transparent;transition:background .15s}
+  .pin-dot.on{background:var(--yellow)}
+  .pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+  .pb{background:var(--panel2);border:1px solid var(--border);color:var(--text);font-family:var(--font-head);font-size:19px;padding:13px;cursor:pointer;border-radius:3px;transition:all .12s;letter-spacing:1px}
+  .pb:hover{background:rgba(255,230,0,.12);border-color:var(--yellow);color:var(--yellow)}
+  .pb.del{color:var(--mag);font-size:13px}
+  .p-acts{display:flex;gap:10px}
+  .p-cancel,.p-ok{flex:1;padding:9px;font-family:var(--font-head);font-size:13px;letter-spacing:2px;cursor:pointer;border:none;border-radius:3px}
+  .p-cancel{background:transparent;border:1px solid var(--dim);color:var(--dim)}
+  .p-ok{background:var(--yellow);color:#000;font-weight:700}
+  .p-err{text-align:center;font-size:11px;color:var(--mag);margin-top:8px;min-height:16px;letter-spacing:1px}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#000;font-family:var(--font-head);font-size:12px;letter-spacing:2px;padding:10px 20px;border-radius:3px;box-shadow:0 4px 20px rgba(57,255,20,.4);transform:translateY(60px);opacity:0;transition:all .3s;z-index:500;text-transform:uppercase}
+  .toast.on{transform:translateY(0);opacity:1}
+
+  @media(max-width:560px){
+    .grid{grid-template-columns:1fr;padding:10px}
+    .htitle{font-size:13px}.clock{font-size:15px}
+  }
+</style>
+</head>
+<body>
+
+<div id="installBanner">
+  <div class="i-text">📱 Instalar <span>Tablero de Impresión</span> como app en tu celular</div>
+  <div class="i-actions">
+    <button class="btn-inst-x" onclick="dismissInstall()">Ahora no</button>
+    <button class="btn-inst" onclick="installApp()">INSTALAR APP</button>
+  </div>
+</div>
+
+<div class="hdr">
+  <div class="hdr-l">
+    <div class="logo">IE</div>
+    <div>
+      <div class="htitle">TABLERO DE IMPRESIÓN</div>
+      <div class="hsub">Integral de Empaques SAS — Flexografía</div>
+    </div>
+  </div>
+  <div class="hdr-r">
+    <div class="stats">
+      <div class="stat"><div class="stat-v" id="sA" style="color:var(--green)">0</div><div class="stat-l">Activas</div></div>
+      <div class="stat"><div class="stat-v" id="sP" style="color:var(--yellow)">0</div><div class="stat-l">Pausa</div></div>
+      <div class="stat"><div class="stat-v" id="sS" style="color:var(--mag)">0</div><div class="stat-l">Parada</div></div>
+    </div>
+    <div>
+      <div class="clock" id="clock">--:--:--</div>
+      <div class="dline" id="dline">--</div>
+    </div>
+  </div>
+</div>
+
+<div class="leg">
+  <div class="leg-i"><div class="leg-d" style="background:var(--cyan)"></div>BOTHEVEN M1–M3</div>
+  <div class="leg-i"><div class="leg-d" style="background:var(--mag)"></div>PEA SHINN M4–M10</div>
+  <div class="leg-i" style="margin-left:auto;color:var(--yellow);font-size:10px">🔐 PIN SUPERVISOR REQUERIDO</div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<!-- PIN MODAL -->
+<div class="m-ov" id="pinMod">
+  <div class="modal">
+    <div class="m-title">🔐 Acceso Supervisor</div>
+    <div class="m-sub">Ingrese PIN para desbloquear edición</div>
+    <div class="m-mach" id="pMach"></div>
+    <div class="pin-disp">
+      <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pb" onclick="pp('1')">1</button><button class="pb" onclick="pp('2')">2</button><button class="pb" onclick="pp('3')">3</button>
+      <button class="pb" onclick="pp('4')">4</button><button class="pb" onclick="pp('5')">5</button><button class="pb" onclick="pp('6')">6</button>
+      <button class="pb" onclick="pp('7')">7</button><button class="pb" onclick="pp('8')">8</button><button class="pb" onclick="pp('9')">9</button>
+      <button class="pb del" onclick="pdel()">⌫</button><button class="pb" onclick="pp('0')">0</button>
+      <button class="pb" onclick="pclr()" style="font-size:10px;color:var(--dim)">CLR</button>
+    </div>
+    <div class="p-acts">
+      <button class="p-cancel" onclick="closePin()">CANCELAR</button>
+      <button class="p-ok" onclick="confirmPin()">CONFIRMAR</button>
+    </div>
+    <div class="p-err" id="pErr"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast">✓ GUARDADO</div>
+
+<script>
+const PIN = '1234';
+const M = [
+  {id:1,name:'BOTHEVEN',t:'bv'},{id:2,name:'BOTHEVEN',t:'bv'},{id:3,name:'BOTHEVEN',t:'bv'},
+  {id:4,name:'PEA SHINN',t:'ps'},{id:5,name:'PEA SHINN',t:'ps'},{id:6,name:'PEA SHINN',t:'ps'},
+  {id:7,name:'PEA SHINN',t:'ps'},{id:8,name:'PEA SHINN',t:'ps'},{id:9,name:'PEA SHINN',t:'ps'},
+  {id:10,name:'PEA SHINN',t:'ps'}
+];
+const TELAS=['LAMINADA','CORRIENTE','MICROPERFORADA','FRANJA','ESPECIAL'];
+const ADIC=['SIN ADICIONAL','FUELLE','FRANJA','MICROPERFORADA','ESPECIAL'];
+
+let unlocked={}, pinTarget=null, pinBuf='', data={}, deferredPrompt=null;
+
+// PWA
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault(); deferredPrompt=e;
+  document.getElementById('installBanner').classList.add('show');
+});
+function installApp(){
+  if(!deferredPrompt)return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(()=>{deferredPrompt=null;dismissInstall();});
+}
+function dismissInstall(){document.getElementById('installBanner').classList.remove('show')}
+window.addEventListener('appinstalled',dismissInstall);
+
+if('serviceWorker'in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));
+}
+
+// CLOCK
+function tick(){
+  const n=new Date();
+  document.getElementById('clock').textContent=n.toLocaleTimeString('es-CO',{hour12:false});
+  const D=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const Mo=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  document.getElementById('dline').textContent=`${D[n.getDay()]} ${n.getDate()} ${Mo[n.getMonth()]} ${n.getFullYear()}`;
+}
+setInterval(tick,1000);tick();
+
+// DATA
+function load(){try{data=JSON.parse(localStorage.getItem('fd'))||{};}catch{data={};}}
+function save(){localStorage.setItem('fd',JSON.stringify(data));}
+
+// STATS
+function stats(){
+  let a=0,p=0,s=0;
+  M.forEach(m=>{const st=(data[m.id]||{}).status||'active';if(st==='active')a++;else if(st==='pause')p++;else s++;});
+  document.getElementById('sA').textContent=a;
+  document.getElementById('sP').textContent=p;
+  document.getElementById('sS').textContent=s;
+}
+
+function opts(arr,v){return '<option value="">—</option>'+arr.map(o=>`<option value="${o}"${v===o?' selected':''}>${o}</option>`).join('');}
+
+function buildGrid(){
+  load();
+  const g=document.getElementById('grid');g.innerHTML='';
+  M.forEach(m=>{const d=data[m.id]||{};g.appendChild(mkCard(m,d));});
+  stats();
+}
+
+function mkCard(m,d){
+  const c=document.createElement('div');
+  c.className=`card ${m.t}`;c.id=`c${m.id}`;
+  const u=!!unlocked[m.id];
+  const st=d.status||'active';
+  c.innerHTML=`
+  <div class="c-hdr">
+    <div class="mid-blk">
+      <div class="mnum">M${String(m.id).padStart(2,'0')}</div>
+      <div><div class="mname">${m.name}</div><div class="mtype">FLEXOGRAFÍA — IMPRESIÓN</div></div>
+    </div>
+    <div class="c-hdr-r">
+      <select class="st-sel" onchange="chgSt(${m.id},this.value)">
+        <option value="active"${st==='active'?' selected':''}>● ACTIVA</option>
+        <option value="pause"${st==='pause'?' selected':''}>◐ PAUSA</option>
+        <option value="stop"${st==='stop'?' selected':''}>■ PARADA</option>
+      </select>
+      <div class="sup-badge" id="sb${m.id}"${u?' style="display:inline"':''}>🔓 SUP</div>
+      <button class="sup-btn" onclick="openPin(${m.id})">🔐 PIN</button>
+    </div>
+  </div>
+  <div class="c-body" id="b${m.id}">
+    <div class="lock-ov${u?'':' on'}" id="lo${m.id}">
+      <div class="lock-ico">🔒</div>
+      <div style="font-size:10px">REQUIERE PIN SUPERVISOR</div>
+      <button class="sup-btn" onclick="openPin(${m.id})" style="margin-top:6px">INGRESAR PIN</button>
+    </div>
+    <div class="fg" style="grid-template-columns:1fr 1fr 1fr 1fr">
+      <div class="fb"><div class="fl">IMP.</div><input class="fi" placeholder="—" value="${d.imp||''}" onchange="sf(${m.id},'imp',this.value)"></div>
+      <div class="fb"><div class="fl">HORA</div><input class="fi" type="time" value="${d.hora||''}" onchange="sf(${m.id},'hora',this.value)"></div>
+      <div class="fb"><div class="fl">DÍA</div><input class="fi" placeholder="Sab…" value="${d.dia||''}" onchange="sf(${m.id},'dia',this.value)"></div>
+      <div class="fb"><div class="fl">CONSEC.</div><input class="fi" placeholder="0205-01" value="${d.consec||''}" onchange="sf(${m.id},'consec',this.value)"></div>
+    </div>
+    <div class="fg" style="grid-template-columns:2fr 1fr">
+      <div class="fb"><div class="fl">ITEM TELA / TELIMP</div><input class="fi" placeholder="Ej: 28225" value="${d.itemTela||''}" onchange="sf(${m.id},'itemTela',this.value)"></div>
+      <div class="fb"><div class="fl">COD. CYREL</div><input class="fi" placeholder="A662" value="${d.codCyrel||''}" onchange="sf(${m.id},'codCyrel',this.value)"></div>
+    </div>
+    <div class="fg" style="grid-template-columns:1fr">
+      <div class="fb"><div class="fl">CLIENTE / IMPRESIÓN</div><input class="fi" placeholder="Cliente y descripción…" value="${d.cliente||''}" onchange="sf(${m.id},'cliente',this.value)" style="font-size:11px"></div>
+    </div>
+    <div class="fg" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="fb"><div class="fl">TIPO DE TELA</div><select class="fsel" onchange="sf(${m.id},'tipoTela',this.value)">${opts(TELAS,d.tipoTela||'')}</select></div>
+      <div class="fb"><div class="fl">LARGO IMPRESIÓN (m)</div><input class="fi" type="number" placeholder="100" value="${d.largo||''}" onchange="sf(${m.id},'largo',this.value)"></div>
+      <div class="fb"><div class="fl">ADICIONAL</div><select class="fsel" onchange="sf(${m.id},'adicional',this.value)">${opts(ADIC,d.adicional||'')}</select></div>
+    </div>
+    <div class="fg" style="grid-template-columns:1fr">
+      <div class="fb"><div class="fl">OBSERVACIONES</div><textarea class="fta" rows="2" placeholder="Ej: PASAR A, HACER NO, X/o…" onchange="sf(${m.id},'observ',this.value)">${d.observ||''}</textarea></div>
+    </div>
+    <div class="fg" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="fb"><div class="fl">CANTIDAD SACOS</div><input class="fi" type="number" placeholder="42000" value="${d.cantSacos||''}" onchange="sf(${m.id},'cantSacos',this.value);upProg(${m.id})"></div>
+      <div class="fb"><div class="fl">CANT. TELA PROD. (m)</div><input class="fi" type="number" placeholder="26880" value="${d.cantTelaProd||''}" onchange="sf(${m.id},'cantTelaProd',this.value);upProg(${m.id})"></div>
+      <div class="fb"><div class="fl">CANT. TELA USAR (m)</div><input class="fi" type="number" placeholder="1731" value="${d.cantTelaUsar||''}" onchange="sf(${m.id},'cantTelaUsar',this.value);upProg(${m.id})"></div>
+    </div>
+    <div class="prog-w"><div class="prog-f" id="pf${m.id}" style="width:${prog(d)}%"></div></div>
+    <div class="fg" style="grid-template-columns:1fr 1fr">
+      <div class="fb"><div class="fl">ITEM TELA A USAR</div><input class="fi" placeholder="Ej: 23372" value="${d.itemTelaUsar||''}" onchange="sf(${m.id},'itemTelaUsar',this.value)"></div>
+      <div class="fb"><div class="fl">TELA PROD. (m) DATO</div><input class="fi" type="number" placeholder="26880" value="${d.telaProdDato||''}" onchange="sf(${m.id},'telaProdDato',this.value)"></div>
+    </div>
+    <div class="fg" style="grid-template-columns:1fr 1fr">
+      <div class="fb"><div class="fl">👷 OPERARIO</div><input class="fi" placeholder="Nombre operario" value="${d.operario||''}" onchange="sf(${m.id},'operario',this.value)"></div>
+      <div class="fb"><div class="fl">🔧 AUXILIAR</div><input class="fi" placeholder="Nombre auxiliar" value="${d.auxiliar||''}" onchange="sf(${m.id},'auxiliar',this.value)"></div>
+    </div>
+  </div>
+  <div class="c-foot">
+    <div class="f-time" id="lu${m.id}">${d.lastUpdate?'Actualizado: '+d.lastUpdate:'Sin cambios'}</div>
+    <div class="f-acts">
+      <button class="bsm cl" onclick="clrCard(${m.id})">LIMPIAR</button>
+      <button class="bsm sv" onclick="svCard(${m.id})">GUARDAR</button>
+    </div>
+  </div>`;
+  return c;
+}
+
+function sf(id,k,v){if(!unlocked[id])return;if(!data[id])data[id]={};data[id][k]=v;}
+function chgSt(id,v){if(!data[id])data[id]={};data[id].status=v;save();stats();}
+function prog(d){const p=parseFloat(d.cantTelaProd)||0,u=parseFloat(d.cantTelaUsar)||0;return p?Math.min(100,Math.round(u/p*100)):0;}
+function upProg(id){const el=document.getElementById('pf'+id);if(el)el.style.width=prog(data[id]||{})+'%';}
+function svCard(id){
+  if(!unlocked[id]){openPin(id);return;}
+  if(!data[id])data[id]={};
+  const n=new Date().toLocaleTimeString('es-CO',{hour12:false});
+  data[id].lastUpdate=n;
+  document.getElementById('lu'+id).textContent='Actualizado: '+n;
+  save();toast();stats();
+}
+function clrCard(id){
+  if(!unlocked[id]){openPin(id);return;}
+  if(!confirm(`¿Limpiar M${String(id).padStart(2,'0')}?`))return;
+  const st=(data[id]||{}).status||'active';
+  data[id]={status:st};save();buildGrid();
+}
+function toast(){
+  const t=document.getElementById('toast');
+  t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2000);
+}
+
+// PIN
+function openPin(id){
+  pinTarget=id;pinBuf='';upDots();
+  document.getElementById('pErr').textContent='';
+  document.getElementById('pMach').textContent=`M${String(id).padStart(2,'0')} — ${M[id-1].name}`;
+  document.getElementById('pinMod').classList.add('on');
+}
+function closePin(){document.getElementById('pinMod').classList.remove('on');pinTarget=null;pinBuf='';}
+function pp(d){if(pinBuf.length>=4)return;pinBuf+=d;upDots();if(pinBuf.length===4)confirmPin();}
+function pdel(){pinBuf=pinBuf.slice(0,-1);upDots();}
+function pclr(){pinBuf='';upDots();}
+function upDots(){for(let i=0;i<4;i++)document.getElementById('d'+i).classList.toggle('on',i<pinBuf.length);}
+function confirmPin(){
+  if(pinBuf===PIN){
+    unlocked[pinTarget]=true;
+    document.getElementById('lo'+pinTarget).classList.remove('on');
+    const b=document.getElementById('sb'+pinTarget);if(b)b.style.display='inline';
+    closePin();
+  }else{
+    document.getElementById('pErr').textContent='❌ PIN INCORRECTO';
+    pinBuf='';upDots();
+    setTimeout(()=>document.getElementById('pErr').textContent='',2000);
+  }
+}
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('pinMod').classList.contains('on'))return;
+  if(e.key>='0'&&e.key<='9')pp(e.key);
+  else if(e.key==='Backspace')pdel();
+  else if(e.key==='Enter')confirmPin();
+  else if(e.key==='Escape')closePin();
+});
+document.getElementById('pinMod').addEventListener('click',function(e){if(e.target===this)closePin();});
+
+buildGrid();
+</script>
+</body>
+</html>
